@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cluster Labeler</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Top Control Bar -->
+        <header class="top-bar glass">
+            <div class="controls-group">
+                <label class="btn file-btn">
+                    Load Images
+                    <input type="file" id="imageInput" multiple accept="image/*" hidden>
+                </label>
+                <button id="saveJsonBtn" class="btn">Save JSON</button>
+            </div>
+            
+            <div class="nav-group">
+                <select id="viewFilter" class="image-dropdown">
+                    <option value="all">All Images</option>
+                    <option value="unlabeled">Unlabeled</option>
+                    <option value="incorrects">Incorrects</option>
+                </select>
+                <button id="prevBtn" class="btn nav-btn" title="Shift+Enter">&lt; Prev</button>
+                <select id="imageSelect" class="image-dropdown"></select>
+                <button id="nextBtn" class="btn nav-btn" title="Enter">Next &gt;</button>
+            </div>
+        </header>
+
+        <!-- Main Workspace -->
+        <main class="main-content">
+            <div class="labeler-container glass">
+                <h2 id="progressIndicator">Image 0 of 0: None</h2>
+                
+                <div class="workspace-layout">
+                    <div class="image-wrapper">
+                        <img id="clusterImage" src="" alt="Cluster Image" style="display: none;">
+                        <div id="noImageText" class="placeholder-text">Load images</div>
+                    </div>
+
+                    <div class="input-stack">
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label for="labelInput">Ground Truth Label</label>
+                                <input type="text" id="labelInput" placeholder="Numbers here..." disabled>
+                            </div>
+                            <div class="row-actions">
+                                <label class="btn small-btn">
+                                    Load <input type="file" id="jsonInputLabel" accept=".json" hidden>
+                                </label>
+                                <button id="copyJsonBtnLabel" class="btn small-btn">Copy</button>
+                            </div>
+                        </div>
+
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label for="predictionInput">Model Prediction</label>
+                                <input type="text" id="predictionInput" placeholder="Predicted size" readonly>
+                            </div>
+                            <div class="row-actions">
+                                <label class="btn small-btn">
+                                    Load <input type="file" id="jsonInputPred" accept=".json" hidden>
+                                </label>
+                                <button id="copyJsonBtnPred" class="btn small-btn">Copy</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <!-- History / Preview Grid -->
+        <footer class="grid-section glass">
+            <div id="imageGrid" class="image-grid"></div>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

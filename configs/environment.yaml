@@ -1,0 +1,19 @@
+name: roleaux
+channels:
+  - pytorch
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.12
+  - pip
+  - pip:
+    - numpy
+    - pandas
+    - matplotlib
+    - seaborn
+    - scikit-learn
+    - scipy
+    - scikit-image
+    - torch
+    - torchvision
+    - jupyterlab

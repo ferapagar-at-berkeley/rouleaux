@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Selector Visualizer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <header class="workspace-header">
+            <h2>Image Comparison Workspace</h2>
+        </header>
+
+        <div class="app-body">
+            <!-- Sidebar Column -->
+            <aside class="sidebar-column">
+                <section class="glass config-section">
+                    <h2>Color Config</h2>
+                    <div class="control-group">
+                        <label>Upload Image</label>
+                        <input type="file" id="imageUpload" accept="image/*">
+                    </div>
+
+                    <div class="color-picker-grid">
+                        <div class="color-picker-item">
+                            <label for="colorA">A</label>
+                            <input type="color" id="colorA" value="#D19F98">
+                        </div>
+                        <div class="color-picker-item">
+                            <label for="colorB">B</label>
+                            <input type="color" id="colorB" value="#FCEED4">
+                        </div>
+                        <div class="color-picker-item">
+                            <label for="colorC">C</label>
+                            <input type="color" id="colorC" value="#3D216B">
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label>View Mode</label>
+                        <select id="viewMode">
+                            <option value="original">Original</option>
+                            <option value="plane">Plane Project</option>
+                            <option value="triangle">Triangle Project</option>
+                            <option value="mask">Mask-Triangle</option>
+                            <option value="mask-plane" selected>Mask-Plane</option>
+                        </select>
+                    </div>
+                </section>
+
+                <section class="glass triangle-section">
+                    <h3>Color Triangle</h3>
+                    <div class="canvas-wrapper">
+                        <canvas id="triangleCanvas" width="300" height="300"></canvas>
+                    </div>
+
+                    <div id="paramDisplay" class="params-box">
+                        <div class="param-row">
+                            <span>t<sub>A'</sub>: <b id="valAp">0.50</b></span>
+                            <span>t<sub>B'</sub>: <b id="valBp">0.50</b></span>
+                            <span>t<sub>C'</sub>: <b id="valCp">0.50</b></span>
+                        </div>
+                        <div class="param-row">
+                            <span>v<sub>o</sub>: [<b id="valVo">0.33, 0.33, 0.33</b>]</span>
+                        </div>
+                    </div>
+
+                    <div class="json-actions">
+                        <button id="copyJsonBtn" class="secondary-btn">Copy JSON</button>
+                        <div class="load-json-group">
+                            <textarea id="jsonInput" placeholder="Paste config JSON here..." rows="3"></textarea>
+                            <button id="loadJsonBtn" class="secondary-btn">Load Config</button>
+                        </div>
+                    </div>
+                </section>
+            </aside>
+
+            <!-- Main Workspace -->
+            <main class="main-content">
+                <div class="image-grid glass">
+                    <div class="image-panel">
+                        <div class="canvas-scroll-wrapper">
+                            <h3>Original</h3>
+                            <canvas id="imageCanvasOriginal"></canvas>
+                        </div>
+                    </div>
+                    <div class="image-panel">
+                        <div class="canvas-scroll-wrapper">
+                            <h3>Processed</h3>
+                            <canvas id="imageCanvasProcessed"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+    <script src="math.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
