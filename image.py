@@ -1,5 +1,3 @@
-import torch
-import torchvision.io as io
 import matplotlib.pyplot as plt
 import glob
 import matplotlib.colors as mcolors
@@ -20,10 +18,10 @@ def generate_random_colors(n: int = 1):
 
 class Image:
 
-    def __init__(self, data: torch.Tensor, title: str="", filter_name="original", fmt="rgb", palette: dict = None, legend_labels: dict = None):
+    def __init__(self, data: np.ndarray, title: str="", filter_name="original", fmt="rgb", palette: dict = None, legend_labels: dict = None):
         # Format input to [3, H, W]
-        if data.dim() == 3 and data.shape[-1] == 3 and data.shape[0] != 3:
-            data = data.permute(2, 0, 1)
+        if data.ndim == 3 and data.shape[-1] == 3 and data.shape[0] != 3:
+            data = np.transpose(data, (2, 0, 1))
         
         self.title = title
         self.data = data
@@ -37,7 +35,10 @@ class Image:
 
     @classmethod
     def from_path(cls, path: str):
-        data = io.read_image(path)
+        img = PILImage.open(path).convert('RGB')
+        data = np.array(img)
+        # convert to [C, H, W] to match what torch.io.read_image used to do
+        data = np.transpose(data, (2, 0, 1))
         return cls(data, title=path.split('\\')[-1].split('/')[-1].split('.')[0])
 
     @classmethod
@@ -78,7 +79,7 @@ class Image:
                     slices.append(new_img)
         return slices
 
-    def add_version(self, processor_name: str, data: torch.Tensor, fmt="rgb", palette=None, legend_labels=None) -> "Image":
+    def add_version(self, processor_name: str, data: np.ndarray, fmt="rgb", palette=None, legend_labels=None) -> "Image":
         if self.filter == "original":
             new_filter_name = processor_name
         else:
@@ -93,26 +94,26 @@ class Image:
         """
         Processes the internal tensor data and returns a ready-to-display uint8 numpy array.
         """
-        disp_data = self.data.clone().float()
+        disp_data = self.data.copy().astype(float)
         
         if self.format == "rgb":
-            disp_data = disp_data.permute(1, 2, 0)
-            disp_data = torch.clamp(disp_data, 0, 255).byte().numpy()
+            disp_data = np.transpose(disp_data, (1, 2, 0))
+            disp_data = np.clip(disp_data, 0, 255).astype(np.uint8)
             return disp_data
             
         elif self.format in ["grayscale", "bw"]:
-            if disp_data.dim() == 3 and disp_data.shape[0] == 3:
-                disp_data = disp_data.mean(dim=0)
-            elif disp_data.dim() == 3 and disp_data.shape[0] == 1:
-                disp_data = disp_data.squeeze(0)
+            if disp_data.ndim == 3 and disp_data.shape[0] == 3:
+                disp_data = disp_data.mean(axis=0)
+            elif disp_data.ndim == 3 and disp_data.shape[0] == 1:
+                disp_data = np.squeeze(disp_data, axis=0)
             
             if disp_data.max() <= 1.0:
                 disp_data = disp_data * 255
-            disp_data = torch.clamp(disp_data, 0, 255).byte().numpy()
+            disp_data = np.clip(disp_data, 0, 255).astype(np.uint8)
             return disp_data
             
         elif self.format == "categorical":
-            if disp_data.dim() == 3:
+            if disp_data.ndim == 3:
                 mask = disp_data[0]
             else:
                 mask = disp_data
@@ -123,7 +124,7 @@ class Image:
             if self.palette is None:
                 self.palette = {}
                 
-            unique_vals = torch.unique(mask).detach().cpu().numpy()
+            unique_vals = np.unique(mask)
             
             for int_val in unique_vals:
                 int_val = int(int_val)
@@ -134,12 +135,12 @@ class Image:
                     self.palette[int_val] = generate_random_colors(1)
                     
                 rgb_color = self.palette[int_val]
-                region = (mask == int_val).detach().cpu().numpy()
+                region = (mask == int_val)
                 rgb_img[region] = rgb_color
                 
             return rgb_img
             
-        return disp_data.byte().numpy()
+        return disp_data.astype(np.uint8)
 
     def show(self, version: str = None, ax=None, figsize=None):
         
@@ -193,7 +194,10 @@ class Image:
 
         filepath = os.path.join(directory, filename)
 
-        pil_img = PILImage.fromarray(rendered_img)
+        if rendered_img.ndim == 2:
+            pil_img = PILImage.fromarray(rendered_img, mode='L')
+        else:
+            pil_img = PILImage.fromarray(rendered_img)
         pil_img.save(filepath)
         
         return filepath
@@ -246,3 +250,9 @@ class Image:
             axes_list[j].axis('off')
             
         plt.tight_layout()
+
+
+def slice_and_save(input_dir = 'data/raw', output_dir='data/sliced', width = 500):
+    imgs_raw = Image.from_dir(input_dir)
+    imgs_sliced = Image.slice_images(imgs_raw, width)
+    Image.save_images(imgs_sliced, output_dir)

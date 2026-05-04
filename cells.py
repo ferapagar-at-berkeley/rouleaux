@@ -1,7 +1,6 @@
 from image import Image
 from processor import PlaneMask
-import torch
-
+import json
 import scipy.ndimage as ndimage
 import skimage.morphology as morph
 import skimage.measure as measure
@@ -19,12 +18,11 @@ class RBCellMask(PlaneMask):
         self.fill_holes = fill_holes
         self.opening_radius = opening_radius
 
-    def _process(self, image: Image) -> torch.Tensor:
+    def _process(self, image: Image) -> np.ndarray:
         cats = super()._process(image)
-        mask = (cats == self.label).float()
+        mask = (cats == self.label).astype(float)
         
-        # Convert to numpy for processing
-        mask_np = mask.cpu().numpy()
+        mask_np = mask
         
         for c in range(mask_np.shape[0]):
             # 1. Fill internal holes
@@ -36,9 +34,7 @@ class RBCellMask(PlaneMask):
                 footprint = morph.disk(self.opening_radius)
                 mask_np[c] = morph.opening(mask_np[c].astype(bool), footprint=footprint)
             
-        mask = torch.from_numpy(mask_np).to(mask.device).float()
-            
-        return mask
+        return mask_np
 
 class RBClusters(RBCellMask):
     def __init__(self, name="rbclusters", erosion_radius=7, **kwargs):
@@ -46,10 +42,10 @@ class RBClusters(RBCellMask):
         self.erosion_radius = erosion_radius
         self.fmt = "categorical"
 
-    def _process(self, image: Image) -> torch.Tensor:
+    def _process(self, image: Image) -> np.ndarray:
         # Get binary mask from RBCellMask
         mask = super()._process(image)
-        mask_np = mask.cpu().numpy()
+        mask_np = mask
         
         labeled_full = np.zeros_like(mask_np, dtype=np.int32)
         total_clusters = 0
@@ -74,7 +70,7 @@ class RBClusters(RBCellMask):
             labeled_full[c] = np.where(labeled > 0, labeled + total_clusters, 0)
             total_clusters += num
             
-        return torch.from_numpy(labeled_full).to(image.data.device)
+        return labeled_full
 
 
 class ClusterCountMask(RBClusters):
@@ -100,10 +96,9 @@ class ClusterCountMask(RBClusters):
             else:
                 self.legend_labels[i] = f"{i}-cluster"
 
-    def _process(self, image: Image) -> torch.Tensor:
+    def _process(self, image: Image) -> np.ndarray:
         # Get individually labeled clusters from RBClusters
-        clusters_tensor = super()._process(image)
-        clusters_np = clusters_tensor.cpu().numpy()
+        clusters_np = super()._process(image)
         
         mask_np = (clusters_np > 0)
         result_np = np.zeros_like(clusters_np, dtype=np.int32)
@@ -177,7 +172,7 @@ class ClusterCountMask(RBClusters):
             # 6. Final assignment (Vectorized lookup)
             result_np[c] = lookup[chan_clusters]
                 
-        return torch.from_numpy(result_np).to(clusters_tensor.device)
+        return result_np
 
 def extract_clusters(image: Image, triangle_path = 'configs/triangle.json', padding: int = 20, fading: float = .7, fade_radius: int = 20) -> tuple[list[Image], dict]:
     """
@@ -196,16 +191,15 @@ def extract_clusters(image: Image, triangle_path = 'configs/triangle.json', padd
     # 1. Run processors if not already present
     if 'rbclusters' not in image.versions:
         RBClusters.from_json(triangle_path).process(image)
-    labeled_np = image.versions['rbclusters'].data.cpu().numpy()
+    labeled_np = image.versions['rbclusters'].data
     
     if 'cluster_counts' not in image.versions:
         ClusterCountMask.from_json(triangle_path).process(image)
-    counts_np = image.versions['cluster_counts'].data.cpu().numpy()
+    counts_np = image.versions['cluster_counts'].data
     
     # original image data (usually [C, H, W])
-    orig_data = image.data.clone().float()
-    C, H, W = orig_data.shape
-    orig_np = orig_data.cpu().numpy()
+    orig_np = image.data.copy().astype(float)
+    C, H, W = orig_np.shape
     
     results = []
     labels = {}
@@ -253,7 +247,7 @@ def extract_clusters(image: Image, triangle_path = 'configs/triangle.json', padd
             # Create new Image object
             new_title = f"{image.title}_cluster_{label_id}"
             new_img = Image(
-                torch.from_numpy(cutout).to(image.data.device),
+                cutout,
                 title=new_title,
                 fmt=image.format,
                 palette=image.palette,
@@ -264,3 +258,27 @@ def extract_clusters(image: Image, triangle_path = 'configs/triangle.json', padd
             labels[new_title] = [predicted_size]
             
     return results, labels
+
+def save_clusters(imgs, random_n=None, output_dir = 'data/test'):
+    if isinstance(imgs, Image):
+        imgs = [imgs]
+    if not random_n:
+        imgs_chosen = imgs
+    else:
+        img_indices = np.random.choice(len(imgs), random_n, replace=False)
+        imgs_chosen = [imgs[i] for i in img_indices]
+    print(f"Images chosen: {[i.title for i in imgs_chosen]}")
+    clusters = []
+    labels = {}
+    for img in imgs_chosen:
+        c, l = extract_clusters(img)
+        clusters += c
+        labels |= l
+    
+    Image.save_images(clusters, output_dir)
+    try:
+        with open(f'{output_dir}/labels.json', 'r') as f:
+            labels = json.load(f) | labels
+    except Exception: pass
+    with open(f'{output_dir}/labels.json', 'w') as f:
+        json.dump(labels, f, indent=4)

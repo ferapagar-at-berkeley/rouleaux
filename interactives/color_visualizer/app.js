@@ -19,10 +19,10 @@ const vC = { x: 40, y: ch - 40 };
 
 // Draggable points. 't' indicates parameter along the edge [0, 1]
 const handles = {
-    O: { 
-        x: 0.2301 * vA.x + 0.6454 * vB.x + 0.1245 * vC.x, 
-        y: 0.2301 * vA.y + 0.6454 * vB.y + 0.1245 * vC.y, 
-        type: 'free' 
+    O: {
+        x: 0.2301 * vA.x + 0.6454 * vB.x + 0.1245 * vC.x,
+        y: 0.2301 * vA.y + 0.6454 * vB.y + 0.1245 * vC.y,
+        type: 'free'
     },
     Ap: { t: 0.7794 }, // On BC (C -> B)
     Bp: { t: 0.2617 }, // On AC (A -> C)
@@ -131,9 +131,9 @@ function drawTriangle() {
     tCtx.fillStyle = 'white';
     tCtx.shadowColor = "rgba(0,0,0,0.5)";
     tCtx.shadowBlur = 4;
-    tCtx.fillText("A", vA.x - 6, vA.y - 15);
+    tCtx.fillText("R", vA.x - 6, vA.y - 15);
     tCtx.fillText("B", vB.x + 15, vB.y + 10);
-    tCtx.fillText("C", vC.x - 25, vC.y + 10);
+    tCtx.fillText("W", vC.x - 25, vC.y + 10);
     tCtx.shadowBlur = 0;
 
     // Update Parameter Info
