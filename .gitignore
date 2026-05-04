@@ -1,2 +1,4 @@
 data/*
-# Keep contents in data/raw/
+__pycache__/*
+venv/*
+.env
