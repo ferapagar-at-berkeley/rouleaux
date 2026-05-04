@@ -1,6 +1,5 @@
 import numpy as np
 import json
-import matplotlib.colors as mcolors
 from abc import ABC, abstractmethod
 from image import Image
 from geometry import get_uv, project_to_triangle, project_to_plane, get_triangle_uv, mask_plane_labels
